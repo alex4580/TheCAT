@@ -80,7 +80,7 @@ Estimated Cost:  $ &lt;!--The | and = makes columns with |==| meaning end of col
 &lt;==
 (input: bind $EstCost, "0")[]&lt;!--leave the [] blank, idk why but it doesn't work without it. The "" sets what the EstCost is if it's blank. If it's filled, it will change, if it becomes blank again after it was once filled, it'll become 0 again.--&gt;
 ==|
-(dropdown: 2bind $Type, "Commodity", "One-Time Service", "Recurring Service", "Construction") &lt;!--this is the dropdown, the 2bind makes sure it updates the variable everytime something new is selected instead of just once. the "" are what will show up as options in the drop down.--&gt;
+Purchase Type: (dropdown: 2bind $Type, "Commodity", "One-Time Service", "Recurring Service", "Construction")<br>Cardholder Type: (dropdown: 2bind $CardType, "Standard", "CCO", "Expanded Use")<br>Location: (dropdown: 2bind $Location, "CONUS", "OCONUS") &lt;!--dropdowns for purchase type, cardholder type, and location--&gt;
 |==|
 ||||||||||||||||||||||||||==
 Please provide a brief and simple description of your purchase/question: &lt;!--The above horridness is how much space it gives the left column. Trial and error went into determining how many | were needed to ensure it didn't look weird and to keep the ! as a circle. Any additional | will make the ! no longer a circle, any less | and the text looks weird. This is the least of all evils.--&gt;
@@ -93,11 +93,20 @@ Please provide a brief and simple description of your purchase/question: &lt;!--
 (button:)[Check(click-rerun: "Check")[(rerun: ?checking)[(show: ?displaycheck)]]]{&lt;!--this is the button that does the magic. the rerun macro is what lets the info update when it's pressed again, and the click-rerun lets the button be pressed again, otherwise it would be a one time use button.--&gt;
 |displaycheck)[(display: "Check")] &lt;!--displaycheck is hidden (that's what the close parenthesis means) until the button called Check is pressed.--&gt;}</tw-passagedata><tw-passagedata pid="2" name="Check" tags="Regs Display" position="225,200" size="100,100">{|checking&gt;[
 &lt;!--this ^ is connected to the ?checking found on the "Help with a GPC Purchase" passage, when that one is clicked, this one makes all the below go--&gt;\
-(if: $Type is "Commodity" or "One-Time Service" and (num: $EstCost) &gt;= 25000)[GPC is not authorized for use on purchases above 25K unless made by a warranted Contracting Officer. If you wish to make a purchase above 25K USD, please speak to your RA to put together a requirement package for contracting.]\
-(else-if: $Type is "Commodity" or "One-Time Service" and (num: $EstCost) &gt;= 10001)[Any purchase above 10K USD for commodities or one-time services must have an approved Single Purchase Limit Increase (SPLI) Request before the purchase can be made. SPLIs are submitted using ECARS (click-rerun:"ECARS")[(open-url: "https://www.afcontracting.hq.af.mil/gpcreport/index.cfm")], please speak to your AO or an A/OPC for more information.]\
-(else-if: $Type is "Construction" and (num: $EstCost) &gt;= 2001)[Construction purchases cannot be made above 2K USD. Please consult your RA for contruction requirements above 2K USD.]\
-(else-if: $Type is "Recurring Service" and (num: $EstCost) &gt;= 10001)[Recurring services above 10K USD per fiscal year are not allowed, please consult your RA for help with a recurring service above 10K USD.]\
- (else:)[]\
+(set: _micro to 0)(set: _sat to 250000)\
+(if: $CardType is "CCO")[
+    (if: $Type is "Construction")[(set: _micro to 30000)]
+    (else:)[(if: $Location is "CONUS")[(set: _micro to 20000)](else:)[(set: _micro to 35000)]]
+]
+(else:)[
+    (if: $Type is "Construction")[(set: _micro to 2000)]
+    (else:)[(set: _micro to 10000)]
+]\
+(if: $CardType is "Expanded Use" and (num: $EstCost) &gt; _sat)[Expanded Use cardholders may not use the GPC for purchases above the Simplified Acquisition Threshold (normally $250K; higher in some contingency or commercial scenarios). Work with your RA to put together a requirement package for contracting.]\
+(else-if: $CardType is "Expanded Use" and (num: $EstCost) &gt; _micro)[This purchase exceeds the micro-purchase limit of $[_micro]. Expanded Use cardholders may exceed micro-purchase limits up to the Simplified Acquisition Threshold (normally $250K) when a contracting action exists. Confirm an appropriate contract or payment instrument is in place before purchasing.]\
+(else-if: $CardType is "CCO" and (num: $EstCost) &gt; _micro)[This purchase exceeds the contingency micro-purchase limit of $[_micro] for CCO cardholders. A contracting action is required before proceeding.]\
+(else-if: (num: $EstCost) &gt; _micro)[This purchase exceeds the standard micro-purchase limit of $[_micro]. Standard cardholders must obtain an approved Single Purchase Limit Increase and have a contracting action in place before proceeding. Recurring services above 10K USD per fiscal year remain unauthorized.]\
+(else:)[]\
 (set: $beaware to (a:))
 	(set: _value1 to (trimmed: $Desc))
 	(set: _value1 to (lowercase: _value1))
